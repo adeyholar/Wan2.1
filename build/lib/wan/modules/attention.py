@@ -32,22 +32,22 @@ def flash_attention(
     q_scale=None,
     causal=False,
     window_size=(-1, -1),
-    deterministic=False, # <--- This argument can stay if it's used elsewhere in this function, but it's not the problem.
+    deterministic=False,
     dtype=torch.bfloat16,
     version=None,
 ):
     """
-    q:             [B, Lq, Nq, C1].
-    k:             [B, Lk, Nk, C1].
-    v:             [B, Lk, Nk, C2]. Nq must be divisible by Nk.
-    q_lens:        [B].
-    k_lens:        [B].
-    dropout_p:     float. Dropout probability.
-    softmax_scale: float. The scaling of QK^T before applying softmax.
-    causal:        bool. Whether to apply causal attention mask.
-    window_size:   (left right). If not (-1, -1), apply sliding window local attention.
-    deterministic: bool. If True, slightly slower and uses more memory.
-    dtype:         torch.dtype. Apply when dtype of q/k/v is not float16/bfloat16.
+    q:              [B, Lq, Nq, C1].
+    k:              [B, Lk, Nk, C1].
+    v:              [B, Lk, Nk, C2]. Nq must be divisible by Nk.
+    q_lens:         [B].
+    k_lens:         [B].
+    dropout_p:      float. Dropout probability.
+    softmax_scale:  float. The scaling of QK^T before applying softmax.
+    causal:         bool. Whether to apply causal attention mask.
+    window_size:    (left right). If not (-1, -1), apply sliding window local attention.
+    deterministic:  bool. If True, slightly slower and uses more memory.
+    dtype:          torch.dtype. Apply when dtype of q/k/v is not float16/bfloat16.
     """
     half_dtypes = (torch.float16, torch.bfloat16)
     assert dtype in half_dtypes
@@ -106,9 +106,8 @@ def flash_attention(
             max_seqlen_q=lq,
             max_seqlen_k=lk,
             softmax_scale=softmax_scale,
-            causal=causal # ,
-            # deterministic=deterministic # <--- COMMENT OUT OR REMOVE THIS LINE
-            )[0].unflatten(0, (b, lq))
+            causal=causal,
+            deterministic=deterministic)[0].unflatten(0, (b, lq))
     else:
         assert FLASH_ATTN_2_AVAILABLE
         x = flash_attn.flash_attn_varlen_func(
@@ -124,9 +123,8 @@ def flash_attention(
             dropout_p=dropout_p,
             softmax_scale=softmax_scale,
             causal=causal,
-            window_size=window_size # ,
-            # deterministic=deterministic # <--- COMMENT OUT OR REMOVE THIS LINE
-            ).unflatten(0, (b, lq))
+            window_size=window_size,
+            deterministic=deterministic).unflatten(0, (b, lq))
 
     # output
     return x.type(out_dtype)
@@ -159,7 +157,7 @@ def attention(
             q_scale=q_scale,
             causal=causal,
             window_size=window_size,
-            deterministic=deterministic, # This 'deterministic' argument is passed to the wrapper, which is fine.
+            deterministic=deterministic,
             dtype=dtype,
             version=fa_version,
         )
